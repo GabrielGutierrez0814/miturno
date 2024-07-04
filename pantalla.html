@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Pantalla de Turnos</title>
+</head>
+<body>
+    <h1>Turnos Actuales</h1>
+    <div id="turnos"></div>
+
+    <script>
+        const socket = new WebSocket('ws://localhost:8080');
+
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            document.getElementById("turnos").innerHTML = `Turno: ${data.turno} - Módulo: ${data.modulo}`;
+            let turno = data.turno.split('');
+            let turnoTexto = `Turno ${turno[0]} ${turno[1]} ${turno[2]} ${turno[3]}`;
+            let mensaje = new SpeechSynthesisUtterance(turnoTexto + " diríjase al módulo " + data.modulo);
+            speechSynthesis.speak(mensaje);
+        };
+
+        socket.onopen = function() {
+            console.log("Conectado al servidor de turnos");
+        };
+    </script>
+</body>
+</html>

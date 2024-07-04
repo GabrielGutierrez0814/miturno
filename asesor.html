@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Asesor de Turnos</title>
+</head>
+<body>
+    <h1>Asesor de Turnos</h1>
+
+    <div id="login">
+        <h2>Iniciar Sesión</h2>
+        <input type="text" id="usuario" placeholder="Usuario" required>
+        <input type="password" id="contraseña" placeholder="Contraseña" required>
+        <button onclick="iniciarSesion()">Iniciar Sesión</button>
+    </div>
+
+    <div id="moduloSeleccion" style="display:none;">
+        <h2>Seleccione Módulo</h2>
+        <select id="modulo"></select>
+        <button onclick="seleccionarModulo()">Seleccionar Módulo</button>
+    </div>
+
+    <div id="turnosAsignados" style="display:none;">
+        <h2>Turnos Asignados</h2>
+        <div id="turnoActual"></div>
+        <button onclick="llamarTurno()">Llamar Siguiente Turno</button>
+    </div>
+
+    <script>
+        const socket = new WebSocket('ws://localhost:8080');
+        let turnoActual = null;
+        let asesorId = null;
+        let moduloId = null;
+
+        function iniciarSesion() {
+            const usuario = document.getElementById('usuario').value;
+            const contraseña = document.getElementById('contraseña').value;
+            fetch('http://localhost:3000/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ usuario, contraseña })
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      asesorId = data.asesorId;
+                      cargarModulos();
+                      document.getElementById('login').style.display = 'none';
+                      document.getElementById('moduloSeleccion').style.display = 'block';
+                  } else {
+                      alert('Credenciales incorrectas');
+                  }
+              });
+        }
+
+        function cargarModulos() {
+            fetch('http://localhost:3000/modulos')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('modulo');
+                    data.forEach(modulo => {
+                        const option = document.createElement('option');
+                        option.value = modulo.id;
+                        option.text = modulo.nombre;
+                        select.add(option);
+                    });
+                });
+        }
+
+        function seleccionarModulo() {
+            moduloId = document.getElementById('modulo').value;
+            document.getElementById('moduloSeleccion').style.display = 'none';
+            document.getElementById('turnosAsignados').style.display = 'block';
+            solicitarTurno();
+        }
+
+        function solicitarTurno() {
+            socket.send(JSON.stringify({ accion: 'solicitarTurno', asesorId, moduloId }));
+        }
+
+        function llamarTurno() {
+            if (turnoActual) {
+                socket.send(JSON.stringify({ accion: 'llamar', turno: turnoActual, moduloId }));
+                turnoActual = null;
+                document.getElementById('turnoActual').innerText = '';
+            } else {
+                alert("No hay turnos disponibles");
+            }
+        }
+
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            turnoActual = data.turno;
+            document.getElementById('turnoActual').innerText = `Turno: ${turnoActual}`;
+        };
+
+        socket.onopen = function() {
+            console.log("Conectado al servidor de turnos");
+        };
+    </script>
+</body>
+</html>

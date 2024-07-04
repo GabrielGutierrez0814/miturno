@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Administrador</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container">
+    <h1>Panel de Administración</h1>
+    <form id="create-turno-form">
+        <div class="form-group">
+            <label for="client_name">Nombre del Cliente</label>
+            <input type="text" class="form-control" id="client_name" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Crear Turno</button>
+    </form>
+    <div id="turnos-list">
+        <h2>Turnos</h2>
+        <ul class="list-group" id="turnos-ul"></ul>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script>
+$(document).ready(function() {
+    const token = 'your-jwt-token-here';
+
+    $('#create-turno-form').submit(function(e) {
+        e.preventDefault();
+        const client_name = $('#client_name').val();
+        $.ajax({
+            url: 'http://localhost:5000/turnos',
+            method: 'POST',
+            contentType: 'application/json',
+            headers: {
+                Authorization: 'Bearer ' + token
+            },
+            data: JSON.stringify({ client_name: client_name }),
+            success: function(response) {
+                alert('Turno creado con ID: ' + response);
+                loadTurnos();
+            }
+        });
+    });
+
+    function loadTurnos() {
+        $.ajax({
+            url: 'http://localhost:5000/turnos',
+            method: 'GET',
+            headers: {
+                Authorization: 'Bearer ' + token
+            },
+            success: function(turnos) {
+                $('#turnos-ul').empty();
+                turnos.forEach(function(turno) {
+                    $('#turnos-ul').append('<li class="list-group-item">Turno ID: ' + turno.id + ' - Cliente: ' + turno.client_name + ' - Estado: ' + turno.status + '</li>');
+                });
+            }
+        });
+    }
+
+    loadTurnos();
+});
+</script>
+</body>
+</html>
